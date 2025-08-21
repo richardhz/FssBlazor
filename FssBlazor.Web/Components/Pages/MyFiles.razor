@@ -1,0 +1,282 @@
+@page "/myfiles"
+@using FssBlazor.Web.Models
+
+<PageTitle>My Files - FSS</PageTitle>
+
+<div class="my-files-page">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--ads-spacing-6);">
+        <div>
+            <h1>My Files</h1>
+            <p>Manage your personal files and folders.</p>
+        </div>
+        <div>
+            <a href="/upload" class="ads-button ads-button--primary">Upload New Files</a>
+        </div>
+    </div>
+
+    <!-- File Stats -->
+    <div class="fss-dashboard-grid" style="margin-bottom: var(--ads-spacing-6);">
+        <div class="fss-card">
+            <div class="fss-stats">
+                <div class="fss-stats__item">
+                    <span class="fss-stats__number">@myFiles.Count</span>
+                    <span class="fss-stats__label">My Files</span>
+                </div>
+                <div class="fss-stats__item">
+                    <span class="fss-stats__number">@sharedByMeCount</span>
+                    <span class="fss-stats__label">Shared by Me</span>
+                </div>
+                <div class="fss-stats__item">
+                    <span class="fss-stats__number">@FormatFileSize(totalSize)</span>
+                    <span class="fss-stats__label">Total Size</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="fss-text-center" style="padding: var(--ads-spacing-8);">
+            <div class="ads-spinner"></div>
+            <p>Loading your files...</p>
+        </div>
+    }
+    else if (myFiles.Any())
+    {
+        <!-- Filter and Sort Options -->
+        <div class="file-controls" style="margin-bottom: var(--ads-spacing-4); display: flex; gap: var(--ads-spacing-4); align-items: center;">
+            <div class="ads-form-group" style="margin-bottom: 0; flex: 1; max-width: 300px;">
+                <input type="text" class="ads-input" placeholder="Search my files..." @bind="searchTerm" @onkeypress="OnSearchKeyPress" />
+            </div>
+            <div class="ads-form-group" style="margin-bottom: 0;">
+                <select class="ads-select" @bind="sortBy" @bind:after="ApplyFiltersAndSort">
+                    <option value="Name">Sort by Name</option>
+                    <option value="Date">Sort by Date</option>
+                    <option value="Size">Sort by Size</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="fss-file-browser">
+            <table class="ads-table">
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Size</th>
+                        <th>Type</th>
+                        <th>Modified</th>
+                        <th>Shared</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var file in filteredFiles)
+                    {
+                        <tr>
+                            <td>
+                                <span style="color: var(--ads-colour-blue);">
+                                    ?? @file.Name
+                                </span>
+                            </td>
+                            <td>@FormatFileSize(file.Size)</td>
+                            <td>@GetFileTypeDisplay(file.ContentType)</td>
+                            <td>@file.ModifiedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @if (file.IsShared)
+                                {
+                                    <span class="fss-status fss-status--success">Shared</span>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--ads-colour-mid-grey);">Private</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="fss-file-actions">
+                                    <button class="fss-action-button" @onclick="() => DownloadFile(file)" title="Download">
+                                        ??
+                                    </button>
+                                    <button class="fss-action-button" @onclick="() => ShareFile(file)" title="Share">
+                                        ??
+                                    </button>
+                                    <button class="fss-action-button" @onclick="() => EditFile(file)" title="Edit">
+                                        ??
+                                    </button>
+                                    <button class="fss-action-button" @onclick="() => DeleteFile(file)" title="Delete">
+                                        ???
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="fss-card">
+            <div class="fss-text-center" style="padding: var(--ads-spacing-8);">
+                <div style="font-size: var(--ads-font-size-36); margin-bottom: var(--ads-spacing-4);">??</div>
+                <h2>No Files Yet</h2>
+                <p>You haven't uploaded any files yet. Get started by uploading your first file.</p>
+                <a href="/upload" class="ads-button ads-button--primary">Upload Your First File</a>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<FileItem> myFiles = new();
+    private List<FileItem> filteredFiles = new();
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private string sortBy = "Name";
+    private int sharedByMeCount = 0;
+    private long totalSize = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMyFiles();
+    }
+
+    private async Task LoadMyFiles()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        // Simulate API call
+        await Task.Delay(600);
+
+        // Mock user's files data
+        myFiles = new List<FileItem>
+        {
+            new FileItem
+            {
+                Id = "mf1",
+                Name = "My Project Proposal.docx",
+                Size = 1048576,
+                ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ModifiedDate = DateTime.Now.AddDays(-2),
+                IsShared = true
+            },
+            new FileItem
+            {
+                Id = "mf2",
+                Name = "Budget Spreadsheet.xlsx",
+                Size = 2097152,
+                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ModifiedDate = DateTime.Now.AddDays(-5),
+                IsShared = false
+            },
+            new FileItem
+            {
+                Id = "mf3",
+                Name = "Presentation Slides.pdf",
+                Size = 5242880,
+                ContentType = "application/pdf",
+                ModifiedDate = DateTime.Now.AddDays(-1),
+                IsShared = true
+            },
+            new FileItem
+            {
+                Id = "mf4",
+                Name = "Meeting Notes.txt",
+                Size = 16384,
+                ContentType = "text/plain",
+                ModifiedDate = DateTime.Now.AddHours(-3),
+                IsShared = false
+            }
+        };
+
+        sharedByMeCount = myFiles.Count(f => f.IsShared);
+        totalSize = myFiles.Sum(f => f.Size);
+        
+        ApplyFiltersAndSort();
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task OnSearchKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            ApplyFiltersAndSort();
+        }
+    }
+
+    private void ApplyFiltersAndSort()
+    {
+        var filtered = myFiles.AsEnumerable();
+
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var searchLower = searchTerm.ToLower();
+            filtered = filtered.Where(f => f.Name.ToLower().Contains(searchLower));
+        }
+
+        // Apply sorting
+        filtered = sortBy switch
+        {
+            "Date" => filtered.OrderByDescending(f => f.ModifiedDate),
+            "Size" => filtered.OrderByDescending(f => f.Size),
+            _ => filtered.OrderBy(f => f.Name)
+        };
+
+        filteredFiles = filtered.ToList();
+        StateHasChanged();
+    }
+
+    private async Task DownloadFile(FileItem file)
+    {
+        // Implement download logic
+        await Task.Delay(100);
+    }
+
+    private async Task ShareFile(FileItem file)
+    {
+        // Navigate to share dialog or show modal
+        await Task.Delay(100);
+    }
+
+    private async Task EditFile(FileItem file)
+    {
+        // Show rename/edit dialog
+        await Task.Delay(100);
+    }
+
+    private async Task DeleteFile(FileItem file)
+    {
+        // Show confirmation dialog then delete
+        await Task.Delay(100);
+        myFiles.Remove(file);
+        ApplyFiltersAndSort();
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private string GetFileTypeDisplay(string contentType)
+    {
+        return contentType switch
+        {
+            "application/pdf" => "PDF",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => "Word",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => "Excel",
+            "text/plain" => "Text",
+            "image/jpeg" or "image/png" or "image/gif" => "Image",
+            _ => "File"
+        };
+    }
+}

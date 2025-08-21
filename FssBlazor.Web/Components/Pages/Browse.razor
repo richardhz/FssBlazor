@@ -1,0 +1,381 @@
+@page "/browse"
+@page "/browse/{FolderId}"
+@using FssBlazor.Web.Models
+
+<PageTitle>Browse Files - FSS</PageTitle>
+
+<div class="fss-file-browser">
+    <!-- Breadcrumb Navigation -->
+    <div class="fss-breadcrumb">
+        <nav aria-label="Breadcrumb">
+            <ol class="fss-breadcrumb__list">
+                <li class="fss-breadcrumb__item">
+                    <a href="/browse" class="fss-breadcrumb__link">Home</a>
+                </li>
+                @foreach (var folder in breadcrumb)
+                {
+                    <li class="fss-breadcrumb__item">
+                        <a href="/browse/@folder.Id" class="fss-breadcrumb__link">@folder.Name</a>
+                    </li>
+                }
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="fss-file-browser__toolbar">
+        <div class="fss-file-browser__search">
+            <input type="text" class="ads-input" placeholder="Search files and folders..." 
+                   @bind="searchTerm" @onkeypress="OnSearchKeyPress" />
+        </div>
+        <div style="display: flex; gap: var(--ads-spacing-2);">
+            <button class="ads-button ads-button--secondary" @onclick="CreateNewFolder">
+                New Folder
+            </button>
+            <a href="/upload?folderId=@(FolderId ?? "")" class="ads-button ads-button--primary">
+                Upload Files
+            </a>
+        </div>
+    </div>
+
+    <!-- File and Folder Listing -->
+    <div class="file-listing">
+        @if (isLoading)
+        {
+            <div class="fss-text-center" style="padding: var(--ads-spacing-8);">
+                <div class="ads-spinner"></div>
+                <p>Loading files...</p>
+            </div>
+        }
+        else
+        {
+            <table class="ads-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Size</th>
+                        <th>Modified</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var folder in folders)
+                    {
+                        <tr>
+                            <td>
+                                <a href="/browse/@folder.Id" style="color: var(--ads-colour-blue); text-decoration: none;">
+                                    ?? @folder.Name
+                                </a>
+                            </td>
+                            <td>Folder</td>
+                            <td>@folder.FileCount files</td>
+                            <td>@folder.CreatedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <div class="fss-file-actions">
+                                    <button class="fss-action-button" @onclick="() => RenameFolder(folder)" title="Rename">
+                                        ??
+                                    </button>
+                                    <button class="fss-action-button" @onclick="() => DeleteFolder(folder)" title="Delete">
+                                        ???
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var file in files)
+                    {
+                        <tr>
+                            <td>
+                                <span style="color: var(--ads-colour-blue);">
+                                    ?? @file.Name
+                                </span>
+                                @if (file.IsShared)
+                                {
+                                    <span title="Shared" style="margin-left: var(--ads-spacing-2);">??</span>
+                                }
+                            </td>
+                            <td>@GetFileTypeDisplay(file.ContentType)</td>
+                            <td>@FormatFileSize(file.Size)</td>
+                            <td>@file.ModifiedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <div class="fss-file-actions">
+                                    <button class="fss-action-button" @onclick="() => DownloadFile(file)" title="Download">
+                                        ??
+                                    </button>
+                                    <button class="fss-action-button" @onclick="() => ShareFile(file)" title="Share">
+                                        ??
+                                    </button>
+                                    <button class="fss-action-button" @onclick="() => RenameFile(file)" title="Rename">
+                                        ??
+                                    </button>
+                                    <button class="fss-action-button" @onclick="() => DeleteFile(file)" title="Delete">
+                                        ???
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (!folders.Any() && !files.Any() && !isLoading)
+            {
+                <div class="fss-text-center" style="padding: var(--ads-spacing-8);">
+                    <p>This folder is empty.</p>
+                    <a href="/upload?folderId=@(FolderId ?? "")" class="ads-button ads-button--primary">
+                        Upload Your First File
+                    </a>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- New Folder Modal -->
+@if (showNewFolderModal)
+{
+    <div class="ads-modal">
+        <div class="ads-modal__dialog">
+            <div class="ads-modal__header">
+                <h2 class="ads-modal__title">Create New Folder</h2>
+                <button class="ads-modal__close" @onclick="() => showNewFolderModal = false">×</button>
+            </div>
+            <div class="ads-form-group">
+                <label class="ads-label" for="folder-name">Folder Name</label>
+                <input type="text" id="folder-name" class="ads-input" @bind="newFolderName" />
+            </div>
+            <div class="ads-form-group">
+                <label class="ads-label" for="folder-description">Description (Optional)</label>
+                <textarea id="folder-description" class="ads-textarea" rows="3" @bind="newFolderDescription"></textarea>
+            </div>
+            <div style="margin-top: var(--ads-spacing-4);">
+                <button class="ads-button ads-button--primary" @onclick="CreateFolder" disabled="@(string.IsNullOrWhiteSpace(newFolderName))">
+                    Create Folder
+                </button>
+                <button class="ads-button ads-button--secondary" @onclick="() => showNewFolderModal = false" style="margin-left: var(--ads-spacing-2);">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string? FolderId { get; set; }
+
+    private List<FolderItem> folders = new();
+    private List<FileItem> files = new();
+    private List<FolderItem> breadcrumb = new();
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private bool showNewFolderModal = false;
+    private string newFolderName = "";
+    private string newFolderDescription = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFiles();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadFiles();
+    }
+
+    private async Task LoadFiles()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        // Simulate API call
+        await Task.Delay(500);
+
+        // Mock data for demonstration
+        if (string.IsNullOrEmpty(FolderId))
+        {
+            // Root folder
+            folders = new List<FolderItem>
+            {
+                new FolderItem { Id = "1", Name = "Documents", FileCount = 15, CreatedDate = DateTime.Now.AddDays(-30) },
+                new FolderItem { Id = "2", Name = "Charts", FileCount = 8, CreatedDate = DateTime.Now.AddDays(-20) },
+                new FolderItem { Id = "3", Name = "Reports", FileCount = 12, CreatedDate = DateTime.Now.AddDays(-10) }
+            };
+
+            files = new List<FileItem>
+            {
+                new FileItem 
+                { 
+                    Id = "f1", 
+                    Name = "Welcome Guide.pdf", 
+                    Size = 2048576, 
+                    ContentType = "application/pdf",
+                    ModifiedDate = DateTime.Now.AddDays(-2),
+                    IsShared = false
+                },
+                new FileItem 
+                { 
+                    Id = "f2", 
+                    Name = "Maritime Data.xlsx", 
+                    Size = 1024000, 
+                    ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    ModifiedDate = DateTime.Now.AddDays(-5),
+                    IsShared = true
+                }
+            };
+
+            breadcrumb = new List<FolderItem>();
+        }
+        else
+        {
+            // Subfolder - in real implementation, load based on FolderId
+            folders = new List<FolderItem>();
+            files = new List<FileItem>
+            {
+                new FileItem 
+                { 
+                    Id = "f3", 
+                    Name = "Sample Document.docx", 
+                    Size = 512000, 
+                    ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    ModifiedDate = DateTime.Now.AddDays(-1),
+                    IsShared = false
+                }
+            };
+
+            breadcrumb = new List<FolderItem>
+            {
+                new FolderItem { Id = FolderId, Name = "Documents" }
+            };
+        }
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task OnSearchKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchFiles();
+        }
+    }
+
+    private async Task SearchFiles()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            await LoadFiles();
+            return;
+        }
+
+        // Implement search logic
+        // For now, just filter current results
+        var searchLower = searchTerm.ToLower();
+        files = files.Where(f => f.Name.ToLower().Contains(searchLower)).ToList();
+        folders = folders.Where(f => f.Name.ToLower().Contains(searchLower)).ToList();
+        StateHasChanged();
+    }
+
+    private void CreateNewFolder()
+    {
+        newFolderName = "";
+        newFolderDescription = "";
+        showNewFolderModal = true;
+    }
+
+    private async Task CreateFolder()
+    {
+        if (string.IsNullOrWhiteSpace(newFolderName))
+            return;
+
+        // Simulate API call
+        await Task.Delay(200);
+
+        // Add new folder to list
+        var newFolder = new FolderItem
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = newFolderName,
+            Description = newFolderDescription,
+            CreatedDate = DateTime.Now,
+            FileCount = 0
+        };
+
+        folders.Add(newFolder);
+        showNewFolderModal = false;
+        StateHasChanged();
+    }
+
+    private async Task DownloadFile(FileItem file)
+    {
+        // Implement download logic
+        await Task.Delay(100);
+        // In real implementation, this would generate a download link
+    }
+
+    private async Task ShareFile(FileItem file)
+    {
+        // Implement share logic
+        await Task.Delay(100);
+        // Navigate to share dialog or show modal
+    }
+
+    private async Task RenameFile(FileItem file)
+    {
+        // Implement rename logic
+        await Task.Delay(100);
+        // Show rename dialog
+    }
+
+    private async Task RenameFolder(FolderItem folder)
+    {
+        // Implement rename logic
+        await Task.Delay(100);
+        // Show rename dialog
+    }
+
+    private async Task DeleteFile(FileItem file)
+    {
+        // Implement delete logic
+        await Task.Delay(100);
+        // Show confirmation dialog then delete
+        files.Remove(file);
+        StateHasChanged();
+    }
+
+    private async Task DeleteFolder(FolderItem folder)
+    {
+        // Implement delete logic
+        await Task.Delay(100);
+        // Show confirmation dialog then delete
+        folders.Remove(folder);
+        StateHasChanged();
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private string GetFileTypeDisplay(string contentType)
+    {
+        return contentType switch
+        {
+            "application/pdf" => "PDF",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => "Word Document",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => "Excel Spreadsheet",
+            "text/plain" => "Text File",
+            "image/jpeg" or "image/png" or "image/gif" => "Image",
+            _ => "File"
+        };
+    }
+}

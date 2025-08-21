@@ -1,0 +1,137 @@
+﻿@page "/"
+@using FssBlazor.Web.Models
+
+<PageTitle>Dashboard - FSS</PageTitle>
+
+<div class="fss-dashboard">
+    <h1>File Share Service Dashboard</h1>
+    
+    <div class="fss-dashboard-grid">
+        <div class="fss-card">
+            <div class="fss-card__header">
+                <h2 class="fss-card__title">Quick Stats</h2>
+            </div>
+            <div class="fss-stats">
+                <div class="fss-stats__item">
+                    <span class="fss-stats__number">@totalFiles</span>
+                    <span class="fss-stats__label">Total Files</span>
+                </div>
+                <div class="fss-stats__item">
+                    <span class="fss-stats__number">@totalFolders</span>
+                    <span class="fss-stats__label">Folders</span>
+                </div>
+                <div class="fss-stats__item">
+                    <span class="fss-stats__number">@sharedFiles</span>
+                    <span class="fss-stats__label">Shared Files</span>
+                </div>
+            </div>
+            <div style="margin-top: var(--ads-spacing-4);">
+                <a href="/upload" class="ads-button ads-button--primary">Upload New Files</a>
+                <a href="/browse" class="ads-button ads-button--secondary" style="margin-left: var(--ads-spacing-2);">Browse Files</a>
+            </div>
+        </div>
+
+        <div class="fss-card">
+            <div class="fss-card__header">
+                <h2 class="fss-card__title">Recent Activity</h2>
+            </div>
+            <div class="recent-activity">
+                @if (recentFiles.Any())
+                {
+                    @foreach (var file in recentFiles)
+                    {
+                        <div class="fss-file-item">
+                            <div class="fss-file-item__name">@file.Name</div>
+                            <div class="fss-file-item__meta">
+                                Uploaded @file.CreatedDate.ToString("dd/MM/yyyy HH:mm") • @FormatFileSize(file.Size)
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p>No recent activity</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="fss-card">
+        <div class="fss-card__header">
+            <h2 class="fss-card__title">Quick Actions</h2>
+        </div>
+        <div style="display: flex; gap: var(--ads-spacing-4); flex-wrap: wrap;">
+            <a href="/upload" class="ads-button ads-button--primary">
+                Upload Files
+            </a>
+            <a href="/browse" class="ads-button ads-button--secondary">
+                Browse All Files
+            </a>
+            <a href="/shared" class="ads-button ads-button--secondary">
+                View Shared Files
+            </a>
+            <a href="/settings" class="ads-button ads-button--secondary">
+                Account Settings
+            </a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int totalFiles = 0;
+    private int totalFolders = 0;
+    private int sharedFiles = 0;
+    private List<FileItem> recentFiles = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // In a real implementation, these would come from the API
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        // Simulate API call
+        await Task.Delay(100);
+        
+        // Mock data for demonstration
+        totalFiles = 156;
+        totalFolders = 23;
+        sharedFiles = 12;
+        
+        recentFiles = new List<FileItem>
+        {
+            new FileItem 
+            { 
+                Name = "Maritime Chart Update.pdf", 
+                CreatedDate = DateTime.Now.AddHours(-2),
+                Size = 2048576 
+            },
+            new FileItem 
+            { 
+                Name = "Navigation Report.docx", 
+                CreatedDate = DateTime.Now.AddHours(-4),
+                Size = 1024000 
+            },
+            new FileItem 
+            { 
+                Name = "Tidal Data 2024.xlsx", 
+                CreatedDate = DateTime.Now.AddDays(-1),
+                Size = 512000 
+            }
+        };
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}

@@ -1,0 +1,46 @@
+<div class="loading-spinner-container">
+    <div class="ads-spinner @(Size == "small" ? "ads-spinner--small" : "")"></div>
+    @if (!string.IsNullOrEmpty(Message))
+    {
+        <p class="loading-message">@Message</p>
+    }
+</div>
+
+<style>
+    .loading-spinner-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: var(--ads-spacing-6);
+        text-align: center;
+    }
+
+    .loading-message {
+        margin-top: var(--ads-spacing-3);
+        margin-bottom: 0;
+        color: var(--ads-colour-dark-grey);
+        font-size: var(--ads-font-size-16);
+    }
+
+    .loading-spinner-container.inline {
+        flex-direction: row;
+        padding: var(--ads-spacing-2);
+    }
+
+    .loading-spinner-container.inline .loading-message {
+        margin-top: 0;
+        margin-left: var(--ads-spacing-2);
+    }
+</style>
+
+@code {
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string Size { get; set; } = "normal"; // "small" or "normal"
+    [Parameter] public bool Inline { get; set; } = false;
+
+    private string GetContainerClass()
+    {
+        return Inline ? "loading-spinner-container inline" : "loading-spinner-container";
+    }
+}

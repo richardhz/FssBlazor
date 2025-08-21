@@ -1,0 +1,93 @@
+@using FssBlazor.Web.Models
+
+<div class="notification-container">
+    @foreach (var notification in notifications)
+    {
+        <div class="ads-notification-banner ads-notification-banner--@notification.Type.ToString().ToLower()" style="position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                    @if (!string.IsNullOrEmpty(notification.Title))
+                    {
+                        <h3 style="margin: 0 0 var(--ads-spacing-2) 0; font-size: var(--ads-font-size-16); font-weight: 600;">
+                            @notification.Title
+                        </h3>
+                    }
+                    <p style="margin: 0;">@notification.Message</p>
+                    @if (!string.IsNullOrEmpty(notification.ActionUrl) && !string.IsNullOrEmpty(notification.ActionText))
+                    {
+                        <div style="margin-top: var(--ads-spacing-2);">
+                            <a href="@notification.ActionUrl" class="ads-button ads-button--secondary ads-button--small">
+                                @notification.ActionText
+                            </a>
+                        </div>
+                    }
+                </div>
+                <button class="notification-close" @onclick="() => DismissNotification(notification.Id)" title="Dismiss">
+                    ×
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public List<NotificationMessage> Notifications { get; set; } = new();
+    [Parameter] public EventCallback<string> OnDismiss { get; set; }
+
+    private List<NotificationMessage> notifications => Notifications;
+
+    private async Task DismissNotification(string id)
+    {
+        await OnDismiss.InvokeAsync(id);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Auto-dismiss success and info notifications after 5 seconds
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(5000);
+            var toDismiss = notifications
+                .Where(n => n.Type == NotificationType.Success || n.Type == NotificationType.Information)
+                .Select(n => n.Id)
+                .ToList();
+
+            foreach (var id in toDismiss)
+            {
+                await DismissNotification(id);
+            }
+        });
+    }
+}
+
+<style>
+    .notification-container {
+        position: fixed;
+        top: var(--ads-spacing-4);
+        right: var(--ads-spacing-4);
+        z-index: 1000;
+        max-width: 400px;
+        width: 100%;
+    }
+
+    .notification-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        font-weight: bold;
+        cursor: pointer;
+        padding: 0;
+        margin-left: var(--ads-spacing-4);
+        line-height: 1;
+        opacity: 0.7;
+    }
+
+    .notification-close:hover {
+        opacity: 1;
+    }
+
+    .ads-button--small {
+        padding: var(--ads-spacing-1) var(--ads-spacing-2);
+        font-size: var(--ads-font-size-14);
+    }
+</style>

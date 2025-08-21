@@ -1,0 +1,84 @@
+﻿@inherits LayoutComponentBase
+
+<div class="ads-page">
+    <header class="ads-header">
+        <div class="ads-header__container">
+            <a href="/" class="ads-header__logo">
+                <span class="ads-header__crown"></span>
+                UK Hydrographic Office - File Share Service
+            </a>
+            <div class="fss-user-menu">
+                <button class="fss-user-menu__toggle" @onclick="ToggleUserMenu">
+                    <span>User Account</span>
+                    <span>▼</span>
+                </button>
+                <div class="fss-user-menu__dropdown @(showUserMenu ? "show" : "")">
+                    <a href="/settings" class="fss-user-menu__item">Settings</a>
+                    <a href="/profile" class="fss-user-menu__item">Profile</a>
+                    <button class="fss-user-menu__item" style="border: none; background: none; width: 100%; text-align: left;">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="ads-navigation" role="navigation" aria-label="Primary navigation">
+        <ul class="ads-navigation__list">
+            <li class="ads-navigation__item">
+                <NavLink class="ads-navigation__link" href="/" Match="NavLinkMatch.All">
+                    <span class="ads-navigation__link-text">Dashboard</span>
+                </NavLink>
+            </li>
+            <li class="ads-navigation__item">
+                <NavLink class="ads-navigation__link" href="/browse">
+                    <span class="ads-navigation__link-text">Browse Files</span>
+                </NavLink>
+            </li>
+            <li class="ads-navigation__item">
+                <NavLink class="ads-navigation__link" href="/upload">
+                    <span class="ads-navigation__link-text">Upload Files</span>
+                </NavLink>
+            </li>
+            <li class="ads-navigation__item">
+                <NavLink class="ads-navigation__link" href="/shared">
+                    <span class="ads-navigation__link-text">Shared Files</span>
+                </NavLink>
+            </li>
+            <li class="ads-navigation__item">
+                <NavLink class="ads-navigation__link" href="/myfiles">
+                    <span class="ads-navigation__link-text">My Files</span>
+                </NavLink>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="ads-main">
+        @Body
+    </main>
+
+    <footer class="ads-footer">
+        <div class="ads-header__container">
+            <p>&copy; @DateTime.Now.Year UK Hydrographic Office. All rights reserved.</p>
+        </div>
+    </footer>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    private bool showUserMenu = false;
+
+    private void ToggleUserMenu()
+    {
+        showUserMenu = !showUserMenu;
+    }
+
+    protected override void OnInitialized()
+    {
+        // Hide user menu when clicking elsewhere
+        // This would need JavaScript interop in a real implementation
+    }
+}

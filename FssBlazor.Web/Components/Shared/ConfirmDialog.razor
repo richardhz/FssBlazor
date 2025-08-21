@@ -1,0 +1,82 @@
+@if (Show)
+{
+    <div class="ads-modal" @onclick="OnBackdropClick">
+        <div class="ads-modal__dialog" @onclick:stopPropagation="true">
+            <div class="ads-modal__header">
+                <h2 class="ads-modal__title">@Title</h2>
+                @if (ShowCloseButton)
+                {
+                    <button class="ads-modal__close" @onclick="OnCancel" aria-label="Close">×</button>
+                }
+            </div>
+            <div class="ads-modal__content">
+                @if (!string.IsNullOrEmpty(Message))
+                {
+                    <p>@Message</p>
+                }
+                @ChildContent
+            </div>
+            <div class="ads-modal__footer">
+                @if (ShowConfirmButton)
+                {
+                    <button class="ads-button ads-button--primary" @onclick="OnConfirm" disabled="@IsProcessing">
+                        @if (IsProcessing)
+                        {
+                            <span class="ads-spinner ads-spinner--small" style="margin-right: var(--ads-spacing-2);"></span>
+                        }
+                        @ConfirmText
+                    </button>
+                }
+                @if (ShowCancelButton)
+                {
+                    <button class="ads-button ads-button--secondary" @onclick="OnCancel" disabled="@IsProcessing" 
+                            style="margin-left: var(--ads-spacing-2);">
+                        @CancelText
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .ads-modal__content {
+        margin-bottom: var(--ads-spacing-4);
+    }
+
+    .ads-modal__footer {
+        display: flex;
+        justify-content: flex-end;
+        border-top: 1px solid var(--ads-colour-light-grey);
+        padding-top: var(--ads-spacing-4);
+        margin-top: var(--ads-spacing-4);
+    }
+
+    .ads-modal__footer button:not(:last-child) {
+        margin-right: var(--ads-spacing-2);
+    }
+</style>
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public string Title { get; set; } = "Confirm";
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string ConfirmText { get; set; } = "Confirm";
+    [Parameter] public string CancelText { get; set; } = "Cancel";
+    [Parameter] public bool ShowConfirmButton { get; set; } = true;
+    [Parameter] public bool ShowCancelButton { get; set; } = true;
+    [Parameter] public bool ShowCloseButton { get; set; } = true;
+    [Parameter] public bool CloseOnBackdropClick { get; set; } = true;
+    [Parameter] public bool IsProcessing { get; set; } = false;
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private async Task OnBackdropClick()
+    {
+        if (CloseOnBackdropClick && !IsProcessing)
+        {
+            await OnCancel.InvokeAsync();
+        }
+    }
+}

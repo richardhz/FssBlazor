@@ -1,0 +1,260 @@
+/* Custom site overrides for FSS Blazor application */
+
+/* Additional FSS-specific styling */
+.fss-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--ads-spacing-6);
+    margin-bottom: var(--ads-spacing-8);
+}
+
+.fss-card {
+    background-color: var(--ads-colour-white);
+    border: 1px solid var(--ads-colour-mid-grey);
+    padding: var(--ads-spacing-5);
+}
+
+.fss-card__header {
+    margin-bottom: var(--ads-spacing-4);
+    border-bottom: 2px solid var(--ads-colour-blue);
+    padding-bottom: var(--ads-spacing-3);
+}
+
+.fss-card__title {
+    font-size: var(--ads-font-size-19);
+    font-weight: 600;
+    margin: 0;
+    color: var(--ads-colour-blue);
+}
+
+.fss-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--ads-spacing-4);
+}
+
+.fss-stats__item {
+    text-align: center;
+}
+
+.fss-stats__number {
+    font-size: var(--ads-font-size-27);
+    font-weight: 700;
+    color: var(--ads-colour-blue);
+    display: block;
+}
+
+.fss-stats__label {
+    font-size: var(--ads-font-size-14);
+    color: var(--ads-colour-dark-grey);
+}
+
+/* File browser specific styles */
+.fss-file-browser {
+    background-color: var(--ads-colour-white);
+    border: 1px solid var(--ads-colour-mid-grey);
+}
+
+.fss-file-browser__toolbar {
+    background-color: var(--ads-colour-light-grey);
+    padding: var(--ads-spacing-3) var(--ads-spacing-4);
+    border-bottom: 1px solid var(--ads-colour-mid-grey);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.fss-file-browser__search {
+    flex: 1;
+    max-width: 300px;
+    margin-right: var(--ads-spacing-4);
+}
+
+.fss-breadcrumb {
+    background-color: var(--ads-colour-light-grey);
+    padding: var(--ads-spacing-3) var(--ads-spacing-4);
+    border-bottom: 1px solid var(--ads-colour-mid-grey);
+}
+
+.fss-breadcrumb__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.fss-breadcrumb__item {
+    margin-right: var(--ads-spacing-2);
+}
+
+.fss-breadcrumb__item:not(:last-child)::after {
+    content: ">";
+    margin-left: var(--ads-spacing-2);
+    color: var(--ads-colour-dark-grey);
+}
+
+.fss-breadcrumb__link {
+    color: var(--ads-colour-blue);
+    text-decoration: none;
+}
+
+.fss-breadcrumb__link:hover {
+    text-decoration: underline;
+}
+
+/* Upload area styling */
+.fss-upload-area {
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.fss-upload-area__icon {
+    font-size: var(--ads-font-size-36);
+    color: var(--ads-colour-blue);
+    margin-bottom: var(--ads-spacing-4);
+}
+
+.fss-upload-area__text {
+    font-size: var(--ads-font-size-19);
+    margin-bottom: var(--ads-spacing-2);
+}
+
+.fss-upload-area__subtext {
+    font-size: var(--ads-font-size-14);
+    color: var(--ads-colour-dark-grey);
+}
+
+/* File actions */
+.fss-file-actions {
+    display: flex;
+    gap: var(--ads-spacing-2);
+    align-items: center;
+}
+
+.fss-action-button {
+    background: none;
+    border: none;
+    color: var(--ads-colour-blue);
+    cursor: pointer;
+    padding: var(--ads-spacing-1);
+    border-radius: var(--ads-border-radius);
+}
+
+.fss-action-button:hover {
+    background-color: var(--ads-colour-light-grey);
+}
+
+.fss-action-button:focus {
+    outline: var(--ads-focus-width) solid var(--ads-focus-colour);
+    outline-offset: 0;
+}
+
+/* User menu */
+.fss-user-menu {
+    position: relative;
+    display: inline-block;
+}
+
+.fss-user-menu__toggle {
+    background: none;
+    border: none;
+    color: var(--ads-colour-white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--ads-spacing-2);
+    padding: var(--ads-spacing-2);
+}
+
+.fss-user-menu__dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: var(--ads-colour-white);
+    border: 1px solid var(--ads-colour-mid-grey);
+    min-width: 200px;
+    z-index: 100;
+    display: none;
+}
+
+.fss-user-menu__dropdown.show {
+    display: block;
+}
+
+.fss-user-menu__item {
+    display: block;
+    padding: var(--ads-spacing-3) var(--ads-spacing-4);
+    color: var(--ads-colour-black);
+    text-decoration: none;
+    border-bottom: 1px solid var(--ads-colour-light-grey);
+}
+
+.fss-user-menu__item:hover {
+    background-color: var(--ads-colour-light-grey);
+}
+
+.fss-user-menu__item:last-child {
+    border-bottom: none;
+}
+
+/* Status indicators */
+.fss-status {
+    display: inline-block;
+    padding: var(--ads-spacing-1) var(--ads-spacing-2);
+    font-size: var(--ads-font-size-14);
+    font-weight: 600;
+    border-radius: 4px;
+}
+
+.fss-status--success {
+    background-color: var(--ads-colour-green);
+    color: var(--ads-colour-white);
+}
+
+.fss-status--pending {
+    background-color: var(--ads-colour-orange);
+    color: var(--ads-colour-white);
+}
+
+.fss-status--error {
+    background-color: var(--ads-colour-red);
+    color: var(--ads-colour-white);
+}
+
+/* Utilities */
+.fss-text-center {
+    text-align: center;
+}
+
+.fss-text-right {
+    text-align: right;
+}
+
+.fss-mt-4 {
+    margin-top: var(--ads-spacing-4);
+}
+
+.fss-mb-4 {
+    margin-bottom: var(--ads-spacing-4);
+}
+
+.fss-hidden {
+    display: none;
+}
+
+.fss-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

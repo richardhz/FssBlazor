@@ -1,0 +1,352 @@
+@page "/upload"
+@using FssBlazor.Web.Models
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Upload Files - FSS</PageTitle>
+
+<div class="upload-page">
+    <h1>Upload Files</h1>
+    <p>Select files to upload to the File Share Service. You can drag and drop files or click to browse.</p>
+
+    @if (!string.IsNullOrEmpty(currentFolderId))
+    {
+        <div class="ads-notification-banner ads-notification-banner--info">
+            <p>Files will be uploaded to the selected folder.</p>
+        </div>
+    }
+
+    <!-- File Upload Area -->
+    <div class="fss-file-upload @(isDragOver ? "fss-file-upload--dragover" : "")" 
+         @ondragover="OnDragOver" 
+         @ondragenter="OnDragEnter" 
+         @ondragleave="OnDragLeave" 
+         @ondrop="OnDrop"
+         @onclick="TriggerFileSelect">
+        
+        <div class="fss-upload-area">
+            <div class="fss-upload-area__icon">??</div>
+            <div class="fss-upload-area__text">
+                @if (selectedFiles.Any())
+                {
+                    <text>@selectedFiles.Count file(s) selected</text>
+                }
+                else
+                {
+                    <text>Drag and drop files here, or click to browse</text>
+                }
+            </div>
+            <div class="fss-upload-area__subtext">
+                Maximum file size: 100MB per file
+            </div>
+        </div>
+
+        <InputFile OnChange="OnInputFileChange" multiple style="display: none;" id="file-input" />
+    </div>
+
+    @if (selectedFiles.Any())
+    {
+        <div class="upload-files-section">
+            <h2>Selected Files</h2>
+            
+            <div class="ads-form-group">
+                <label class="ads-label" for="folder-select">Upload to folder</label>
+                <select id="folder-select" class="ads-select" @bind="selectedFolderId">
+                    <option value="">Root folder</option>
+                    @foreach (var folder in availableFolders)
+                    {
+                        <option value="@folder.Id">@folder.Name</option>
+                    }
+                </select>
+            </div>
+
+            <table class="ads-table">
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Size</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var file in selectedFiles)
+                    {
+                        <tr>
+                            <td>@file.Name</td>
+                            <td>@FormatFileSize(file.Size)</td>
+                            <td>@GetFileTypeDisplay(file.ContentType)</td>
+                            <td>
+                                <span class="fss-status fss-status--@GetStatusClass(file)">
+                                    @GetUploadStatus(file)
+                                </span>
+                            </td>
+                            <td>
+                                @if (uploadProgress.ContainsKey(file.Name))
+                                {
+                                    var progress = uploadProgress[file.Name];
+                                    <div class="ads-progress">
+                                        <div class="ads-progress__bar" style="width: @(progress)%"></div>
+                                    </div>
+                                    <small>@progress.ToString("F1")%</small>
+                                }
+                                else
+                                {
+                                    <span>Ready</span>
+                                }
+                            </td>
+                            <td>
+                                <button class="fss-action-button" @onclick="() => RemoveFile(file)" title="Remove">
+                                    ?
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="upload-actions">
+                <button class="ads-button ads-button--primary" @onclick="StartUpload" disabled="@isUploading">
+                    @if (isUploading)
+                    {
+                        <span class="ads-spinner ads-spinner--small" style="margin-right: var(--ads-spacing-2);"></span>
+                        <text>Uploading...</text>
+                    }
+                    else
+                    {
+                        <text>Upload Files</text>
+                    }
+                </button>
+                <button class="ads-button ads-button--secondary" @onclick="ClearFiles" disabled="@isUploading" style="margin-left: var(--ads-spacing-2);">
+                    Clear All
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (uploadMessages.Any())
+    {
+        <div class="upload-messages">
+            @foreach (var message in uploadMessages)
+            {
+                <div class="ads-notification-banner ads-notification-banner--@message.Type.ToString().ToLower()">
+                    <p>@message.Message</p>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, SupplyParameterFromQuery] public string? FolderId { get; set; }
+
+    private List<IBrowserFile> selectedFiles = new();
+    private Dictionary<string, double> uploadProgress = new();
+    private List<FolderItem> availableFolders = new();
+    private string selectedFolderId = "";
+    private string currentFolderId = "";
+    private bool isDragOver = false;
+    private bool isUploading = false;
+    private List<NotificationMessage> uploadMessages = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentFolderId = FolderId ?? "";
+        selectedFolderId = currentFolderId;
+        await LoadAvailableFolders();
+    }
+
+    private async Task LoadAvailableFolders()
+    {
+        // Simulate API call to get available folders
+        await Task.Delay(100);
+        
+        availableFolders = new List<FolderItem>
+        {
+            new FolderItem { Id = "1", Name = "Documents" },
+            new FolderItem { Id = "2", Name = "Charts" },
+            new FolderItem { Id = "3", Name = "Reports" }
+        };
+    }
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        var files = e.GetMultipleFiles(10); // Max 10 files
+        foreach (var file in files)
+        {
+            if (file.Size <= 100 * 1024 * 1024) // 100MB limit
+            {
+                selectedFiles.Add(file);
+            }
+            else
+            {
+                uploadMessages.Add(new NotificationMessage
+                {
+                    Type = NotificationType.Error,
+                    Message = $"File '{file.Name}' is too large. Maximum size is 100MB."
+                });
+            }
+        }
+        StateHasChanged();
+    }
+
+    private async Task TriggerFileSelect()
+    {
+        await JSRuntime.InvokeVoidAsync("document.getElementById('file-input').click");
+    }
+
+    private void OnDragOver(DragEventArgs e)
+    {
+        // In Blazor, preventDefault is handled automatically for drag events
+    }
+
+    private void OnDragEnter(DragEventArgs e)
+    {
+        isDragOver = true;
+    }
+
+    private void OnDragLeave(DragEventArgs e)
+    {
+        isDragOver = false;
+    }
+
+    private async Task OnDrop(DragEventArgs e)
+    {
+        isDragOver = false;
+        
+        // Note: In a real implementation, you'd handle the dropped files here
+        // This requires additional JavaScript interop for file handling
+        // The files would be available in e.DataTransfer.Files through JS interop
+        await Task.CompletedTask;
+    }
+
+    private void RemoveFile(IBrowserFile file)
+    {
+        selectedFiles.Remove(file);
+        uploadProgress.Remove(file.Name);
+        StateHasChanged();
+    }
+
+    private void ClearFiles()
+    {
+        selectedFiles.Clear();
+        uploadProgress.Clear();
+        uploadMessages.Clear();
+        StateHasChanged();
+    }
+
+    private async Task StartUpload()
+    {
+        if (!selectedFiles.Any()) return;
+
+        isUploading = true;
+        uploadMessages.Clear();
+        StateHasChanged();
+
+        try
+        {
+            foreach (var file in selectedFiles)
+            {
+                await UploadFile(file);
+            }
+
+            uploadMessages.Add(new NotificationMessage
+            {
+                Type = NotificationType.Success,
+                Message = $"Successfully uploaded {selectedFiles.Count} file(s)."
+            });
+
+            // Clear files after successful upload
+            await Task.Delay(2000);
+            ClearFiles();
+        }
+        catch (Exception ex)
+        {
+            uploadMessages.Add(new NotificationMessage
+            {
+                Type = NotificationType.Error,
+                Message = $"Upload failed: {ex.Message}"
+            });
+        }
+        finally
+        {
+            isUploading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UploadFile(IBrowserFile file)
+    {
+        // Simulate file upload with progress
+        for (int i = 0; i <= 100; i += 10)
+        {
+            uploadProgress[file.Name] = i;
+            StateHasChanged();
+            await Task.Delay(200); // Simulate network delay
+        }
+
+        // In a real implementation, you would:
+        // 1. Read the file content
+        // 2. Send it to your API in chunks
+        // 3. Update progress based on actual upload progress
+        
+        var buffer = new byte[file.Size];
+        await file.OpenReadStream(100 * 1024 * 1024).ReadAsync(buffer);
+        
+        // Simulate API call to upload
+        await Task.Delay(500);
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private string GetFileTypeDisplay(string contentType)
+    {
+        return contentType switch
+        {
+            "application/pdf" => "PDF",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => "Word",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => "Excel",
+            "text/plain" => "Text",
+            "image/jpeg" or "image/png" or "image/gif" => "Image",
+            _ => "File"
+        };
+    }
+
+    private string GetUploadStatus(IBrowserFile file)
+    {
+        if (uploadProgress.ContainsKey(file.Name))
+        {
+            var progress = uploadProgress[file.Name];
+            if (progress >= 100)
+                return "Completed";
+            else if (progress > 0)
+                return "Uploading";
+        }
+        return "Ready";
+    }
+
+    private string GetStatusClass(IBrowserFile file)
+    {
+        if (uploadProgress.ContainsKey(file.Name))
+        {
+            var progress = uploadProgress[file.Name];
+            if (progress >= 100)
+                return "success";
+            else if (progress > 0)
+                return "pending";
+        }
+        return "pending";
+    }
+}
